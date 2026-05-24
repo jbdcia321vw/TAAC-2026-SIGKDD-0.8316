@@ -2,7 +2,7 @@
 # TAAC-2026-SIGKDD Top 5% 0.8316
 <img width="1520" height="304" alt="c5056db36fec57c17bb0e01e89150b52" src="https://github.com/user-attachments/assets/1293210e-c426-4c43-9d52-899411de64b5" />
 
-ori version是带缺失值填充和RCL的版本，最高得分0.8288，best version是基于 https://github.com/nhdzTVlxb/TAAC-2026-Tencent-KDD 改的，最高得分0.8316
+ori version是带缺失值填充和RCL的版本，最高得分0.8288，best version是基于 https://github.com/nhdzTVlxb/TAAC-2026-Tencent-KDD 改的，最高得分0.831*
 
 # 推荐系统 / CVR 预测模型迭代复盘
 
