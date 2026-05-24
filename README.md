@@ -76,21 +76,21 @@ Timeline:5.17-5.24
 
 结构精简是本阶段最核心的方向之一。模型的主要问题不是表达能力不足，而是部分模块重复表达同一类信号，尤其是非序列静态侧特征被 CrossNet、SE-Net、NS self-attention 和 output fusion 同时强化。
 
-#### 3.1.1 CrossNet 调整
+##### 3.1.1 CrossNet 调整
 
 ```python
-num_cross_layers: 2 → 1
+num_cross_layers: 2 → 0 num_cross_layers: 2 → 3
 ```
 
-实验现象表明，单独将 CrossNet 从 2 层降为 1 层，线上效果不一定更好，甚至可能下降。CrossNet 本身并不是最应该直接删除的模块，它确实提供了有效的显式交互能力，但需要避免与 output fusion、SE-Net 等共同造成过拟合。
+实验现象表明，单独将 CrossNet 从 2 层降为 1 层，从2层升到3层，线上效果不一定更好，甚至可能下降。CrossNet 本身并不是最应该直接删除的模块，它确实提供了有效的显式交互能力，但需要避免与 output fusion、SE-Net 等共同造成过拟合。
 
 #### 3.1.2 SE-Net 分析与删减尝试
 
-SE-Net 的作用是对特征通道进行动态加权。风险在于容易强化训练集中的特征偏见。我们曾尝试去掉 SE-Net，但结果显示单纯去掉 SE-Net 不一定稳定提升。阶段性结论：SE-Net 可以作为可控模块保留，但不宜继续增强。相比直接删除 SE-Net，更值得优先处理的是 output fusion、时间特征冗余和 loss 权重。
+SE-Net 的作用是对特征通道进行动态加权。风险在于容易强化训练集中的特征偏见。我们曾尝试去掉 SE-Net，但结果显示单纯去掉 SE-Net 线上auc结果下降。阶段性结论：SE-Net 可以作为可控模块保留，相比直接删除 SE-Net，更值得优先处理的是 output fusion、时间特征冗余。
 
 #### 3.1.3 NS Output Fusion 调整
 
-NS output fusion 的逻辑是将最后一层交互后的 NS tokens 聚合，再拼接或融合回最终输出层。问题在于 NS tokens 已经在主干中参与交互，再次 fusion 容易重复注入同一类静态信息。观察到关闭 output fusion 后，线上结果曾出现提升。阶段性结论：NS output fusion 不是主干必需项，更倾向于关闭或弱化。
+NS output fusion 的逻辑是将最后一层交互后的 NS tokens 聚合，再拼接或融合回最终输出层。问题在于 NS tokens 已经在主干中参与交互，再次 fusion 容易重复注入同一类静态信息。我们尝试将output fusion直接关掉，观察到关闭 output fusion 后，测试结果出现提升（上升了千一）。阶段性结论：NS output fusion 不是主干必需项，利用ns output fusion 会导致过拟合，需要删去。
 
 ### 3.2 时间特征建模修正
 
@@ -121,14 +121,11 @@ temporal bias 通常作用在 attention score 上，形式为：
 attention_score = QK^T / sqrt(d) + time_bias
 ```
 
-其意义是让模型在注意力分配时考虑行为发生时间。原始 temporal bias 往往隐含“越近的行为越重要”的假设，但某些长期兴趣也可能非常重要。
+其意义是让模型在注意力分配时考虑行为发生时间。原始 temporal bias 往往隐含“越近的行为越重要”的假设，但某些长期兴趣也可能非常重要，在消融实验中，去掉了temporal bias模块之后，auc出现了下降，可以初步判断temporal bias对于最终的auc具有正向贡献。
 
-改进方向：
+也许可以尝试的改进方向：
 - 不只使用单调递减时间衰减
-- 引入可学习的 time bucket bias
-- 让不同 attention head 学习不同时间偏好
 - 对短期兴趣和长期兴趣分别建模
-- 保留相对时间，不强化绝对 calendar time
 
 ### 3.3 缺失值与冷启动建模
 
