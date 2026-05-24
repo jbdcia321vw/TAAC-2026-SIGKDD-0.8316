@@ -14,9 +14,13 @@
 
 **1. 时间特征工程**
 
-做的比较精细，有很大提升。
+在ns token上直接加上固定不可学习的sin/cos循环时间编码（weekday和hour），测试集auc到达0.823
 
-**2. 解决冷启动与缺失值问题**
+**2. pair特征处理**
+
+在rankmxier tokenizer内部对pair特征的dense部分进行log1p后与int emb拼接并过一层Linear，auc到达0.826
+
+**3. 解决冷启动与缺失值问题**
 
 最主要的尝试是引入 UserSimilarityNullImputer，同时在user_dense加入缺失值指示器（0/1编码），线上提升了1.5k。
 
@@ -28,7 +32,7 @@
         ↓
 用相似用户的信息补当前用户缺失字段
 
-**3. RCL-style 关键历史行为筛选**
+**4. RCL-style 关键历史行为筛选**
 
 思路：由 user_context 与 item_context 生成 conversion-aware query，再用该 query 对历史行为 token 打分，选择 top-k 个最相关行为，并加权汇总回 query tokens。
 
